@@ -10,7 +10,7 @@ Ext.define('Hc.view.Viewport', {
             bodyPadding: 5,
 
             // The form will submit an AJAX request to this URL when submitted
-            url: 'save-form.php',
+            url: '/cls/checkForm1',
 
             // Fields will be arranged vertically, stretched to full width
             layout: 'anchor',
@@ -27,7 +27,7 @@ Ext.define('Hc.view.Viewport', {
                     emptyText: 'Excel格式',
                     regex: /.*.exe/,
                     regexText: '请上传文本',
-                    allowBlank : false,
+                    //allowBlank : false,
                     fieldLabel: 'abc',
                     removeFn: function(r, fn){
                         fn({suc: true});
@@ -36,11 +36,14 @@ Ext.define('Hc.view.Viewport', {
                 {
                 fieldLabel: 'First Name',
                 name: 'first',
+                    value: 'aladin',
                 allowBlank: false
             },{
                 fieldLabel: 'Last Name',
                 name: 'last',
-                allowBlank: false
+                    value: 'lee',
+
+                    allowBlank: false
             }],
 
             // Reset and Submit buttons
@@ -54,14 +57,33 @@ Ext.define('Hc.view.Viewport', {
                 //formBind: true, //only enabled once the form is valid
                 //disabled: true,
                 handler: function() {
-                    var form = this.up('form').getForm();
+                    var fp = this.up('form');
+                    var form = fp.getForm();
                     if (form.isValid()) {
+                        fp.getEl().mask('Processing...');
+                        var unMask = function(){ fp.getEl().unmask();};
                         form.submit({
                             success: function(form, action) {
-                                Ext.Msg.alert('Success', action.result.msg);
+                                unMask();
+                                Ext.Msg.alert('Success', action.result.msg).setIcon(Ext.Msg.INFO);
                             },
                             failure: function(form, action) {
-                                Ext.Msg.alert('Failed', action.result.msg);
+                                unMask();
+                                var win = null;
+                                switch (action.failureType) {
+                                    case Ext.form.action.Action.CLIENT_INVALID:
+                                        win = Ext.Msg.alert('Failure', 'Form fields may not be submitted with invalid values');
+                                        break;
+                                    case Ext.form.action.Action.CONNECT_FAILURE:
+                                        win = Ext.Msg.alert('Failure', 'Ajax communication failed');
+                                        break;
+                                    case Ext.form.action.Action.SERVER_INVALID:
+                                        win = Ext.Msg.alert('Failure', action.result.msg);
+                                        break;
+                                }
+                                if(win) {
+                                    win.setIcon(Ext.Msg.WARNING);
+                                }
                             }
                         });
                     }
