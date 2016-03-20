@@ -6,7 +6,10 @@ Ext.define('Ext.ux.FlowUpload', {
     combineErrors: true,
     cls: 'flowfile',
     autoUpload: true,
+    isDirectory: false,
     removeFn: Ext.emptyFn, //删除后台文件接口
+
+    ignoreFiles: [],
 
     initComponent: function()
     {
@@ -63,7 +66,17 @@ Ext.define('Ext.ux.FlowUpload', {
             ]
         });
 
+        Ext.Loader.loadScript({
+            url: '/app/lib/moment.min.js'
+        });
+
         me.callParent();
+    },
+
+    getFormatTime: function(remain) {
+      return moment().startOf('day')
+          .seconds(remain)
+          .format('H:mm:ss');
     },
 
     // private
@@ -76,8 +89,8 @@ Ext.define('Ext.ux.FlowUpload', {
 
         me.browserBox = me.down('#browse_file_box');
         var flow = me.flow = new Flow({
-            singleFile: true,
-            flowChunkSize: 100 * 1024 * 1024 * 1024,
+            singleFile: !me.isDirectory,
+            flowChunkSize: 10 * 1024 * 1024,
             target: 'flow/upload'
         });
 
@@ -136,23 +149,32 @@ Ext.define('Ext.ux.FlowUpload', {
             }
         });
 
-        window.dfdf = flow;
-
-        flow.assignBrowse(me.browserBox.el.dom);
+        flow.assignBrowse(me.browserBox.el.dom, me.isDirectory, !me.isDirectory, me.flowAttributes);
+        //flow.assignBrowse(me.browserBox.el.dom, me.isDirectory);
         //flow.assignDrop(document.getElementById('dropTarget'));
 
         flow.on('fileAdded', function (file, event) {
+            console.log(1212, file);
             var errors = me.fileNameField.getErrors(file.name);
             if(errors.length) {
                 Ext.Msg.alert('提示', errors.join('<br />'));
                 return false;
             }
 
+            if(me.isDirectory) {
+                if(me.flowAttributes && me.flowAttributes.acceptRegex) {
+                    if(!me.flowAttributes.acceptRegex.test(file.name)) {
+                        me.ignoreFiles.push(file.name);
+                        return false;
+                    }
+                }
+            }
+
             me.fileNameField.setValue(file.name);
         });
 
-        flow.on('filesSubmitted', function (file, event) {
-            console.log(file, event);
+        flow.on('filesSubmitted', function (files, event) {
+            console.log(files, event, files.length + '个文件',  me.ignoreFiles);
             if(me.autoUpload) {
                 flow.upload();
             }
@@ -168,12 +190,23 @@ Ext.define('Ext.ux.FlowUpload', {
             console.log(flow.files);
         });
 
+        flow.on('complete', function () {
+            console.log('全部上传完毕');
+        });
+
         flow.on('fileError', function (file, message) {
-            console.log(file, message);
-            console.log(flow.files);
+            Ext.Msg.alert('提示', '文件：' + (file.relativePath || file.name) + '上传失败， ' +  message)
+                .setIcon(Ext.Msg.ERROR);
+            flow.pause();
         });
 
         flow.on('fileProgress', function (file, chunk) {
+            var remain = flow.timeRemaining();
+            if(remain) {
+                me.browserBox.update('Remain: ' + me.getFormatTime(remain));
+            } else {
+                me.browserBox.update('上传文件');
+            }
             console.log(file.progress());
         });
 

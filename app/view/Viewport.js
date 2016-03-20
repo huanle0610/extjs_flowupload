@@ -29,6 +29,19 @@ Ext.define('Hc.view.Viewport', {
                     regexText: '请上传文本',
                     //allowBlank : false,
                     fieldLabel: 'abc',
+                    flowAttributes: {accept: '.xlsx'},
+                    removeFn: function(r, fn){
+                        fn({suc: true});
+                    }
+                },
+                {
+                    xtype: 'flowfile',
+                    name: 'model_dir',
+                    isDirectory: true,
+                    emptyText: '模型目录',
+                    //allowBlank : false,
+                    fieldLabel: '目录',
+                    flowAttributes: {acceptRegex: /xlsx$/},
                     removeFn: function(r, fn){
                         fn({suc: true});
                     }

@@ -23,10 +23,14 @@ class Flow extends CI_Controller {
         $response = array('success' => true, 'complete' => false);
         if (\Flow\Basic::save($targetDir . DIRECTORY_SEPARATOR . $request->getIdentifier(), $config, $request)) {
             // file saved successfully and can be accessed at './final_file_destination'
-            $response['complete'] = true;
-            $response['file'] = $targetDir . DIRECTORY_SEPARATOR . $request->getIdentifier();
-            $response['file_id'] = 1;
-
+            if(strpos($request->getIdentifier(), '1xlsx') !== false) {
+                $response['complete'] = true;
+                $response['file'] = $targetDir . DIRECTORY_SEPARATOR . $request->getIdentifier();
+                $response['file_id'] = 1;
+            } else {
+                $response['success'] = false;
+                $response['complete'] = false;
+            }
         } else {
             // This is not a final chunk or request is invalid, continue to upload.
         }
